@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
-                List.of(e.getMessage()),   // ✅ JDK 17 safe
+                List.of(e.getMessage()),
                 request.getRequestURI()
         );
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
     }
 
     // Handle Constraint Violations (eg. @PathVariable, @RequestParam)
-    @ExceptionHandler(ConstraintViolationException.class)   // ✅ added missing annotation
+    @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException e, HttpServletRequest request) {
         List<String> errors = e.getConstraintViolations()
                 .stream()
@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                List.of(e.getMessage()),   // ✅ keep List.of in JDK 17
+                List.of(e.getMessage()),
                 request.getRequestURI()
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
