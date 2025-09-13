@@ -1,64 +1,85 @@
 package com.mediconnect.doctorservice.doctorservice;
 
-import com.mediconnect.doctorservice.doctordto.DoctorDto;
+import com.mediconnect.doctorservice.doctordto.DoctorRequestDTO;
+import com.mediconnect.doctorservice.doctordto.DoctorResponseDTO;
+import com.mediconnect.doctorservice.doctordto.DoctorSummaryDTO;
 import com.mediconnect.doctorservice.entity.Doctor;
-import com.mediconnect.doctorservice.exception.ResourceNotFoundException;
-import com.mediconnect.doctorservice.mapper.DoctorMapper;
+import com.mediconnect.doctorservice.exception.DoctorAlreadyExistsException;
+import com.mediconnect.doctorservice.exception.DoctorNotFoundException;
+import com.mediconnect.doctorservice.mapper.DoctorMappers;
 import com.mediconnect.doctorservice.repository.DoctorRepository;
-import org.apache.coyote.Response;
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class DoctorService {
 
     private final DoctorRepository doctorRepository;
+    private final DoctorMappers doctorMappers;
 
-    public DoctorService(DoctorRepository doctorRepository) {
+    @Transactional
+    public DoctorResponseDTO createDoctor(DoctorRequestDTO doctorRequestDTO) {
+        if (doctorRepository.existsByDoctorEmail((doctorRequestDTO.getDoctorEmail()))){
+            throw new DoctorAlreadyExistsException("Email already exists");
+        }
 
-        this.doctorRepository = doctorRepository;
+        if (doctorRepository.existsByDoctorPhone((doctorRequestDTO.getDoctorPhone()))){
+            throw new DoctorAlreadyExistsException("Phone already exists");
+        }
+
+        Doctor saved = doctorMappers.toEntity(doctorRequestDTO);
+        Doctor persisted = doctorRepository.save(saved);
+        return doctorMappers.toResponse(persisted);
     }
 
-
-    public List<DoctorDto> getAllDoctors() {
-
-        return doctorRepository.findAll()
-                .stream()
-                .map(DoctorMapper ::toDto)
-                .toList();
+    public List<DoctorResponseDTO> getAllDoctors() {
+        return doctorMappers.toResponseList(doctorRepository.findAll());
     }
 
-    public DoctorDto getDoctorById(Long id){
-    Doctor doctor = doctorRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Doctor not Found with id " +id));
-    return DoctorMapper.toDto(doctor);
+    public DoctorSummaryDTO getDoctorSummary(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id " + id));
+        return doctorMappers.toSummary(doctor);
     }
 
-    public DoctorDto saveDoctor(DoctorDto doctorDto)
-    {
-        Doctor doctor = DoctorMapper.toEntity(doctorDto);
-        Doctor saved = doctorRepository.save(doctor);
-        return DoctorMapper.toDto(saved);
+    public DoctorResponseDTO getDoctorById(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id " + id));
+        return doctorMappers.toResponse(doctor);
     }
 
-    public DoctorDto updateDoctor(Long id,DoctorDto dto) {
-
-        Doctor doctor = doctorRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Doctor not found with id: " +id));
-
-        doctor.setName(dto.getName());
-        doctor.setEmail(dto.getEmail());
-        doctor.setSpecialization(dto.getSpecialization() );
-        doctor.setPhone(dto.getPhone());
-
-        Doctor updated = doctorRepository.save(doctor);
-        return DoctorMapper.toDto(updated);
-    }
-
-    public void deleteDoctorById(Long id) {
-        Doctor doctor = doctorRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException(("Doctor not found with id:" + id)));
+    @Transactional
+    public void deleteDoctor(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id " + id));
         doctorRepository.delete(doctor);
+    }
+
+    @Transactional
+    public DoctorResponseDTO updateDoctor(Long id, DoctorRequestDTO doctorRequestDTO) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id " + id));
+
+        // Check for duplicate email (excluding current doctor)
+        if (doctorRepository.existsByDoctorEmailAndIdNot(doctorRequestDTO.getDoctorEmail(), id)) {
+            throw new DoctorAlreadyExistsException("Email already exists");
+        }
+
+        // Check for duplicate phone (excluding current doctor)
+        if (doctorRepository.existsByDoctorPhoneAndIdNot(doctorRequestDTO.getDoctorPhone(), id)) {
+            throw new DoctorAlreadyExistsException("Phone already exists");
+        }
+
+        doctor.setDoctorName(doctorRequestDTO.getDoctorName());
+        doctor.setDoctorEmail(doctorRequestDTO.getDoctorEmail());
+        doctor.setDoctorPhone(doctorRequestDTO.getDoctorPhone());
+        doctor.setDoctorSpecialization(doctorRequestDTO.getDoctorSpecialization());
+
+        Doctor saved = doctorRepository.save(doctor);
+        return doctorMappers.toResponse(saved);
     }
 }

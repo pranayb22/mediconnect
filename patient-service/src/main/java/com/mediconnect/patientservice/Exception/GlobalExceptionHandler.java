@@ -6,78 +6,46 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
+public ResponseEntity<Map<String,Object>> buildResponseEntity(HttpStatus status, String message){
+    Map<String,Object> map = new HashMap<>();
+    map.put("status", status.value());
+    map.put("message", message);
+    map.put("timestamp", LocalDateTime.now());
+    map.put("error", status.getReasonPhrase());
+    return new ResponseEntity<>(map, status);
+}
 
-    //HANDLE RESOURCE NOT FOUND
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException e, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                List.of(e.getMessage()),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
-    }
+@ExceptionHandler(PatientNotFoundException.class)
+public ResponseEntity<Map<String,Object>> handleNotFound(PatientNotFoundException ex){
+    return  buildResponseEntity(HttpStatus.NOT_FOUND, ex.getMessage());
+}
 
-    //Handle Validation Errors (@Valid)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleException(MethodArgumentNotValidException e, HttpServletRequest request) {
-        List<String> errors = e.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(err -> err.getField() + ":" +err.getDefaultMessage())
-                .collect(Collectors.toList());
+@ExceptionHandler(PatientAlreadyExistException.class)
+public ResponseEntity<Map<String,Object>> handleAlreadyExist(PatientAlreadyExistException ex){
+    return  buildResponseEntity(HttpStatus.CONFLICT, ex.getMessage());
+}
 
+@ExceptionHandler(PatientDeleteException.class)
+public ResponseEntity<Map<String,Object>> handleDeleteException(PatientDeleteException ex){
+    return  buildResponseEntity(HttpStatus.BAD_REQUEST, ex.getMessage());
+}
 
-        ErrorResponse error = new  ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                errors,
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
+@ExceptionHandler(Exception.class)
+public ResponseEntity<Map<String,Object>> handleException(Exception ex){
+    return  buildResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+}
 
-
-//    Handle Constraint Violations(eg. @PathVariable ,@RequestParam)
-    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException e, HttpServletRequest request) {
-        List<String> errors = e.getConstraintViolations()
-                .stream()
-                .map(violation -> violation.getPropertyPath() + ":" +violation.getMessage())
-                .collect(Collectors.toList());
-
-        ErrorResponse error = new  ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                errors,
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-
-    //handle Generic EXCEPTION
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAllException(Exception e, HttpServletRequest request) {
-        ErrorResponse error = new  ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                List.of(e.getMessage()),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
 
 
 }

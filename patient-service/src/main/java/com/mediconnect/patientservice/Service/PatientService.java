@@ -1,64 +1,102 @@
 package com.mediconnect.patientservice.Service;
 
 import com.mediconnect.patientservice.Entity.Patient;
-import com.mediconnect.patientservice.Exception.ResourceNotFoundException;
+import com.mediconnect.patientservice.Exception.PatientAlreadyExistException;
+import com.mediconnect.patientservice.Exception.PatientNotFoundException;
 import com.mediconnect.patientservice.Repository.PatientRepository;
-import com.mediconnect.patientservice.mapper.PatientMapper;
-import com.mediconnect.patientservice.patientdto.PatientDto;
+import com.mediconnect.patientservice.mapper.PatientMappers;
+import com.mediconnect.patientservice.patientdto.PatientRequestDTO;
+import com.mediconnect.patientservice.patientdto.PatientResponseDTO;
+import com.mediconnect.patientservice.patientdto.PatientSummaryDTO;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+
 
 @Service
+@RequiredArgsConstructor
 public class PatientService {
+
+
     private final PatientRepository patientRepository;
+    private final PatientMappers patientMappers;
 
-    public PatientService(PatientRepository patientRepository) {
+    //Create Logic
+    @Transactional
+    public PatientResponseDTO createPatient(PatientRequestDTO patientRequestDTO) {
+        if(patientRepository.existsByEmail(patientRequestDTO.getEmail())){
+            throw new PatientAlreadyExistException("Patient with email already exists");
+        }
+        if(patientRepository.existsByPhoneNumber(patientRequestDTO.getPhoneNumber())){
+            throw new PatientAlreadyExistException("Patient with phone number already exists");
+        }
 
-        this.patientRepository = patientRepository;
+        Patient patient = patientMappers.toEntity(patientRequestDTO);
+        Patient savedPatient = patientRepository.save(patient);
+        return patientMappers.toResponse(savedPatient);
     }
 
 
-    //Get all patients
-    public List<PatientDto> getAllPatients() {
-        return patientRepository.findAll()
-                .stream()
-                .map(PatientMapper :: toDto)
-                .toList();
-    }
 
-      //Get By id
-    public PatientDto getPatientById(Long id) {
+    //Update Logic
+    @Transactional
+    public PatientResponseDTO updatePatient(Long id,PatientRequestDTO patientRequestDTO) {
         Patient patient = patientRepository.findById(id)
-                .orElseThrow(()->new ResourceNotFoundException("Patient is not found by id" +id));
-        return PatientMapper.toDto(patient);
+                .orElseThrow(()-> new PatientNotFoundException("Patient not found with id: " + id));
+
+
+    if(patientRepository.existsByEmailAndIdNot(patientRequestDTO.getEmail(),id)){
+        throw new PatientAlreadyExistException("Patient with email already exists");
+    }
+    if(patientRepository.existsByPhoneNumberAndIdNot(patientRequestDTO.getPhoneNumber(),id)){
+        throw new PatientAlreadyExistException("Patient with phone number already exists");
     }
 
-    public PatientDto savePatient(PatientDto patientdto) {
-        Patient patient = PatientMapper.toEntity(patientdto);
-        Patient saved = patientRepository.save(patient);
-        return PatientMapper.toDto(saved);
+    patient.setFirstName(patientRequestDTO.getFirstName());
+    patient.setLastName(patientRequestDTO.getLastName());
+    patient.setEmail(patientRequestDTO.getEmail());
+    patient.setPhoneNumber(patientRequestDTO.getPhoneNumber());
+    patient.setAddress(patientRequestDTO.getAddress());
+    patient.setGender(patientRequestDTO.getGender());
+    patient.setAge(patientRequestDTO.getAge());
+
+    Patient savedPatient = patientRepository.save(patient);
+    return patientMappers.toResponse(savedPatient);
     }
 
-    public PatientDto updatePatient(Long id, PatientDto patientdto) {
-        Patient patient = patientRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " +id));
 
-        patient.setFirstName(patientdto.getFirstName());
-        patient.setEmail(patientdto.getEmail());
-        patient.setLastName(patientdto.getLastName());
-        patient.setAddress(patientdto.getAddress());
-        patient.setGender(patientdto.getGender());
-        patient.setAge(patientdto.getAge());
-        patient.setPhoneNumber(patientdto.getPhoneNumber());
-
-        Patient updated = patientRepository.save(patient);
-        return PatientMapper.toDto(updated);
+    public List<PatientResponseDTO> getAllPatients() {
+        List<Patient> patients = patientRepository.findAll();
+        return  patientMappers.toResponseList(patients);
     }
 
-    public void deletePatientById(Long id) {
-        Patient Patient = patientRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException(("Patient not found with id:" + id)));
-        patientRepository.delete(Patient);
+
+    public PatientResponseDTO getPatientById(Long id) {
+       return patientRepository.findById(id)
+               .map(patientMappers :: toResponse)
+               .orElseThrow(()-> new PatientNotFoundException("Patient not found with id: " + id));
+    }
+
+
+    public PatientSummaryDTO getPatientSummary(Long id) {
+      Patient  patient = patientRepository.findById(id)
+              .orElseThrow(()-> new PatientNotFoundException("Patient not found with id: " + id));
+      return patientMappers.toSummary(patient);
+    }
+
+
+    public void deletePatient(Long id) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(()-> new PatientNotFoundException("Patient not found with id: " + id));
+        patientRepository.delete(patient);
+    }
+
+    public PatientResponseDTO getPatientByEmail(String email) {
+        Patient patient = patientRepository.getPatientByEmail(email)
+                .orElseThrow(()-> new PatientNotFoundException("Patient not found with email: " + email));
+        return patientMappers.toResponse(patient);
     }
 
 }

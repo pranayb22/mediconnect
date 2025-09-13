@@ -1,9 +1,6 @@
 package com.mediconnect.appointmentservice.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -15,27 +12,28 @@ import java.time.LocalDateTime;
 public class Appointment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
-    @NotNull(message = "Patient id is required")
+    @Column(nullable = false)
     private Long patientId;
 
-    @NotNull(message = "Doctor id is required")
+  @Column(nullable = false)
     private Long doctorId;
 
-    @NotNull(message = "Appointment date is required")
-    @FutureOrPresent(message = "Appointment date must be in future or present ")
+   @Column(nullable = false)
     private LocalDateTime appointmentDate;
+
 
     private String appointmentTime;
 
-    @NotNull(message = "Enter Description in short")
-    @Size(min = 5,max = 20,message = "Description must be in 5 to 20 characters ")
+    @Column(nullable = false,length = 100)
     private String appointmentDescription;
 
-    @NotBlank(message = "Status is required")
-    @Pattern(regexp = "PENDING|CONFIRMED|CANCELLED",message = "status must be pending ,confirmed or cancelled")
+    @Column(nullable = false,length = 20)
     private String status;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
 
 }

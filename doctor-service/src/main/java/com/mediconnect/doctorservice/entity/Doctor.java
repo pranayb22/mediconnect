@@ -1,15 +1,16 @@
 package com.mediconnect.doctorservice.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.Email;
+import lombok.*;
+
+import java.util.Arrays;
+import java.util.List;
+
 
 @Entity
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor
+@Builder
 public class Doctor {
 
     @Id
@@ -17,18 +18,32 @@ public class Doctor {
     private Long id;
 
 
-    @NotBlank(message = "Name is mandatory")
-    @Size(min = 2,max = 50,message = "Name must be between 2 and 50 Characters")
-    private String name;
 
-    @NotBlank(message = "Specialization is mandatory")
-    private String specialization;
+   @Column(name = "doctor_name", nullable = false,length = 50)
+    private String doctorName;
 
-    @Column(unique = true)
-    private String email;
 
-    @Column(unique = true)
-    private String phone;
+    @Column(name = "doctor_specialization",nullable = false,length = 100)
+    private String doctorSpecialization;
 
+
+    @Email
+    @Column(name = "doctor_email", unique = true, nullable = false,length = 100)
+    private String doctorEmail;
+
+
+    @Column(name = "doctor_phone", nullable = false,length = 15)
+    private String doctorPhone;
+
+
+    //For Time slots
+
+    @ElementCollection
+    @CollectionTable(name = "doctor_availabilty",joinColumns = @JoinColumn(name = "doctor_id"))
+    @Column(name = "time_slot")
+    private List<String> availableTimeSlots = Arrays.asList(
+            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+            "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
+    );
 
 }

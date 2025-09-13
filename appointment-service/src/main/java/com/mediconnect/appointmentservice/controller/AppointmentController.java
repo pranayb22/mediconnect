@@ -1,78 +1,112 @@
 package com.mediconnect.appointmentservice.controller;
 
 
-import com.mediconnect.appointmentservice.appointmentdto.AppointmentDto;
-import com.mediconnect.appointmentservice.appointmentdto.AppointmentResponseDto;
-import com.mediconnect.appointmentservice.entity.Appointment;
-import com.mediconnect.appointmentservice.exception.AppointmentNotFoundException;
+import com.mediconnect.appointmentservice.appointmentdto.AppointmentRequestDTO;
+import com.mediconnect.appointmentservice.appointmentdto.AppointmentResponseDTO;
+import com.mediconnect.appointmentservice.appointmentdto.AppointmentSummaryDTO;
+import com.mediconnect.appointmentservice.repository.AppointmentRepository;
 import com.mediconnect.appointmentservice.service.AppointmentService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
+@RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final AppointmentRepository appointmentRepository;
 
-    public AppointmentController(AppointmentService appointmentService) {
-        this.appointmentService = appointmentService;
-    }
 
     //create
     @PostMapping
-    public ResponseEntity<AppointmentResponseDto> createAppointment(@Valid @RequestBody AppointmentDto appointmentDto) {
-        AppointmentResponseDto created = appointmentService.saveAppointment(appointmentDto);
+    public ResponseEntity<AppointmentResponseDTO> createAppointment(@Valid @RequestBody AppointmentRequestDTO appointmentRequestDTO) {
+        AppointmentResponseDTO created = appointmentService.createAppointment(appointmentRequestDTO);
         return new  ResponseEntity<>(created,HttpStatus.CREATED);
     }
 
     //update
     @PutMapping("/{id}")
-    public ResponseEntity<AppointmentResponseDto> updateAppointment(@PathVariable Long id ,@Valid @RequestBody AppointmentDto updatedAppointmentdto) {
-        AppointmentResponseDto updated = appointmentService.updateAppointment(id, updatedAppointmentdto);
-        return new  ResponseEntity<>(updated,HttpStatus.OK);
+    public ResponseEntity<AppointmentResponseDTO> updateAppointment(@PathVariable Long id , @Valid @RequestBody AppointmentRequestDTO updatedAppointmentdto) {
+        return ResponseEntity.ok(appointmentService.updateAppointment(id,updatedAppointmentdto));
     }
 
     //delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void>  deleteAppointment(@PathVariable Long id) {
-        appointmentService.deleteAppointment(id);
-        return  ResponseEntity.noContent().build();
+    public ResponseEntity<Map<String,Object>>  deleteAppointment(@PathVariable Long id) {
+        appointmentService.deleteAppointmentById(id);
+        return  ResponseEntity.ok(
+                Map.of("message","Appointment has been deleted successfully",
+                        "status","success",
+                        "id" ,id)
+        );
     }
 
     //Fetch all
     @GetMapping
-    public ResponseEntity<List<AppointmentResponseDto>> getAllAppointments() {
+    public ResponseEntity<List<AppointmentResponseDTO>> getAllAppointments() {
         return ResponseEntity.ok(appointmentService.getAllAppointments());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AppointmentResponseDto> getAppointmentById(@PathVariable Long id) {
-        AppointmentResponseDto appointment = appointmentService.getAppointmentById(id);
+    public ResponseEntity<AppointmentResponseDTO> getAppointmentById(@PathVariable Long id) {
+        AppointmentResponseDTO appointment = appointmentService.getAppointmentById(id);
         return ResponseEntity.ok(appointment);
 
     }
 
-    public ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByPatientId(@PathVariable Long id){
-        return ResponseEntity.ok(appointmentService.getAppointmentByPatientId(id));
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByPatientId(@PathVariable Long patientId) {
+        return ResponseEntity.ok(appointmentService.getAppointmentsByPatientId(patientId));
     }
 
 
-    public ResponseEntity<List<AppointmentResponseDto>> getAllAppointmentsByDoctorId(@PathVariable Long id){
-        return ResponseEntity.ok(appointmentService.getAppointmentByDoctorId(id));
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<AppointmentResponseDTO>> getAllAppointmentsByDoctorId(@PathVariable Long doctorId) {
+        return ResponseEntity.ok(appointmentService.getAppointmentsByDoctorId(doctorId));
     }
 
-    public ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByDate(@PathVariable String appointmentDate){
-        LocalDateTime date = LocalDateTime.parse(appointmentDate);
-        return ResponseEntity.ok(appointmentService.getAppointmentByDate(date));
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByStatus(@PathVariable String status){
+        return ResponseEntity.ok(appointmentService.getAppointmentByStatus(status));
     }
 
-    public ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByStatus(@PathVariable String appointmentStatus){
-        return ResponseEntity.ok(appointmentService.getAppointmentByStatus(appointmentStatus));
+@GetMapping("/summary/{id}")
+    public ResponseEntity<AppointmentSummaryDTO> getAppointmentSummary(@PathVariable Long id){
+        return ResponseEntity.ok(appointmentService.getAppointmentSummaryById(id));
+    }
+
+
+    @GetMapping("/date-range")
+    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByDateRange(@RequestParam LocalDateTime start,@RequestParam LocalDateTime end){
+return ResponseEntity.ok(appointmentService.getAppointmentByDateRange(start, end));
+    }
+
+
+
+    @GetMapping("/doctor/{doctorId}/booked-slots/{date}")
+    public ResponseEntity<List<String>> getBookedSlots(@PathVariable Long doctorId,@PathVariable String date){
+
+        System.out.println("Received date string: '" + date + "'");
+        System.out.println("Length: " + date.length());
+        try {
+            LocalDate localDate = LocalDate.parse(date);
+            System.out.println("Successfully parsed as: " + localDate);
+            List<String> bookedSlots = appointmentRepository.findBookedSlotsByDoctorAndDate(doctorId, localDate);
+            return ResponseEntity.ok(bookedSlots);
+        }
+        catch (Exception e){
+            System.out.println("Parse error: " + e.getMessage());
+            throw new RuntimeException("Invalid date format. Use YYYY-MM-DD format: " + date);
+        }
     }
 }

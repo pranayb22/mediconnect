@@ -33,6 +33,24 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
 
+    // MapStruct
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // MapStruct Annotation Processor (MUST come after Lombok)
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+    // Lombok-MapStruct Binding: Allows MapStruct to work with Lombok
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+
+    //Feign
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+
     compileOnly 'org.projectlombok:lombok:1.18.32'
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
 }

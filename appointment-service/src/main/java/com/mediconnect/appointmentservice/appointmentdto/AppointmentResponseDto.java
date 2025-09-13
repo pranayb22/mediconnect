@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
-@Builder
-public class AppointmentResponseDto {
+
+public class AppointmentResponseDTO {
     private Long id;
     private Long patientId;
     private Long doctorId;
@@ -16,4 +16,6 @@ public class AppointmentResponseDto {
     private String appointmentTime;
     private String appointmentDescription;
     private String status;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
