@@ -3,7 +3,7 @@ package com.mediconnect.patientservice.Service;
 import com.mediconnect.patientservice.Entity.Patient;
 import com.mediconnect.patientservice.Exception.PatientAlreadyExistException;
 import com.mediconnect.patientservice.Exception.PatientNotFoundException;
-import com.mediconnect.patientservice.Repository.PatientRepository;
+import com.mediconnect.patientservice.repository.PatientRepository;
 import com.mediconnect.patientservice.mapper.PatientMappers;
 import com.mediconnect.patientservice.patientdto.PatientRequestDTO;
 import com.mediconnect.patientservice.patientdto.PatientResponseDTO;

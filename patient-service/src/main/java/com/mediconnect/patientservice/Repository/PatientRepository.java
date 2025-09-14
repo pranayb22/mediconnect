@@ -1,4 +1,4 @@
-package com.mediconnect.patientservice.Repository;
+package com.mediconnect.patientservice.repository;
 
 import com.mediconnect.patientservice.Entity.Patient;
 import org.springframework.data.jpa.repository.JpaRepository;

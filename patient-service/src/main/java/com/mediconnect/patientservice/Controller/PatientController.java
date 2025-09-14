@@ -1,7 +1,7 @@
 package com.mediconnect.patientservice.Controller;
 
 
-import com.mediconnect.patientservice.Repository.PatientRepository;
+import com.mediconnect.patientservice.repository.PatientRepository;
 import com.mediconnect.patientservice.Service.PatientService;
 import com.mediconnect.patientservice.patientdto.PatientRequestDTO;
 import com.mediconnect.patientservice.patientdto.PatientResponseDTO;
